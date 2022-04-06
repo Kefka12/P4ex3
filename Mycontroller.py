@@ -67,9 +67,7 @@ def writeTunnelRules(p4info_helper, ingress_sw, egress_sw, tunnel_id,
     # and you will need to select the port dynamically for each switch based on
     # your topology.
 
-    # 要求建立入口的转发规则，根据已建立的规则1，3建立
-    # TODO build the transit rule
-    # TODO install the transit rule on the ingress switch
+
     table_entry = p4info_helper.buildTableEntry(
         table_name="MyIngress.myTunnel_exact"
         match_fields={
@@ -113,8 +111,6 @@ def readTableRules(p4info_helper, sw):
     for response in sw.ReadTableEntries():
         for entity in response.entities:
             entry = entity.table_entry
-            # TODO For extra credit, you can use the p4info_helper to translate
-            #      the IDs in the entry to names
             action = entry.action.action#读取动作实体
             action_name = p4info_helper.get_actions_name(action.action_id)#读取动作名
             #读取完成后，输出分析信息
@@ -164,6 +160,7 @@ def main(p4info_file_path, bmv2_file_path):
             address='127.0.0.1:50052',
             device_id=1,
             proto_dump_file='logs/s2-p4runtime-requests.txt')
+
         
         # Send master arbitration update message to establish this controller as
         # master (required by P4Runtime before performing any other write operation)
@@ -177,16 +174,22 @@ def main(p4info_file_path, bmv2_file_path):
         s2.SetForwardingPipelineConfig(p4info=p4info_helper.p4info,
                                        bmv2_json_file_path=bmv2_file_path)
         print("Installed P4 Program using SetForwardingPipelineConfig on s2")
-
-        # Write the rules that tunnel traffic from h1 to h2
+      
+        # h1到h2运输规则
         writeTunnelRules(p4info_helper, ingress_sw=s1, egress_sw=s2, tunnel_id=100,
-                         dst_eth_addr="08:00:00:00:02:22", dst_ip_addr="10.0.2.2")
+                         dst_eth_addr="08:00:00:00:02:02", dst_ip_addr="10.0.2.2")
 
-        # Write the rules that tunnel traffic from h2 to h1
+        # h2到h1运输规则
         writeTunnelRules(p4info_helper, ingress_sw=s2, egress_sw=s1, tunnel_id=200,
-                         dst_eth_addr="08:00:00:00:01:11", dst_ip_addr="10.0.1.1")
+                         dst_eth_addr="08:00:00:00:01:01", dst_ip_addr="10.0.1.1")
+        # h11到h22运输规则
+        writeTunnelRules(p4info_helper, ingress_sw=s1, egress_sw=s2, tunnel_id=100,
+                         dst_eth_addr="08:00:00:00:02:22", dst_ip_addr="10.0.2.22")
+
+        # h22到h11运输规则
+        writeTunnelRules(p4info_helper, ingress_sw=s2, egress_sw=s1, tunnel_id=200,
+                         dst_eth_addr="08:00:00:00:01:11", dst_ip_addr="10.0.1.11")
         # 从s1,s2中读取流表规则
-        # TODO Uncomment the following two lines to read table entries from s1 and s2
         readTableRules(p4info_helper, s2)
         readTableRules(p4info_helper, s1)
         
